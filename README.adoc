@@ -120,10 +120,8 @@ plain-common-lisp. We first need to create a directory "hello-world" and follow
 plain-common-lisp directory structure.
 
 image::docs/images/helloworld/01-applications-directory.png[screenshot]
-image::docs/images/helloworld/02-applications-directory-helloworld.png[screenshot]
 
-In this hello-world project, the "third-party" directory will not be used. The
-"sources" directory of the application "hello-world" contains the source
+The "sources" directory of the application "hello-world" contains the source
 code. Nothing specific to plain-common-lisp here, this structure is common to
 most Common Lisp's projects.
 
