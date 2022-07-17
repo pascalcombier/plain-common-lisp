@@ -114,13 +114,13 @@ image::docs/images/helloworld/00-plain-common-lisp-directory.png[screenshot]
 Initially, the "applications" directory is empty:
 
 image::docs/images/helloworld/01-applications-directory-empty.png[screenshot]
-image::docs/images/helloworld/02-applications-directory-helloworld.png[screenshot]
 
 This complete example is also available in the {url-releases}[latest release] of
 plain-common-lisp. We first need to create a directory "hello-world" and follow
 plain-common-lisp directory structure.
 
 image::docs/images/helloworld/01-applications-directory.png[screenshot]
+image::docs/images/helloworld/02-applications-directory-helloworld.png[screenshot]
 
 The "sources" directory of the application "hello-world" contains the source
 code. Nothing specific to plain-common-lisp here, this structure is common to
