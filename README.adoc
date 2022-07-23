@@ -372,12 +372,12 @@ simply needed to type `Ctrl-c Ctrl-c`. The result of the compilation will appear
 in the terminal below the source code. One can directly test the hello-world
 function by jumping in the REPL and typing the Common Lisp code `(hello-world)`.
 
+image::docs/images/slime-pcl-install-swank/10-slime-interaction.png[screenshot]
+
 This is exactly why it is named _interactive_. The programmer write a function
 in its source code and test it immediately. If the function is working, the
 developer can save the file and then write a new function. The development of
 the program is done step-by-step in a incremental way.
-
-image::docs/images/slime-pcl-install-swank/10-slime-interaction.png[screenshot]
 
 In most of Common Lisp's programs there are different packages. By default,
 SLIME starts in the standard package `common-lisp-user` also named
