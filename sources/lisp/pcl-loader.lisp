@@ -303,7 +303,10 @@ depandancy source, src for sources)."
   (initialize-applications)
   (print-introduction)
   (unless from-standalone-executable
-    (let ((startup-file (pcl-relative-pathname +pcl-app-dir+ "main.lisp")))
+    (let* ((pcl-progname (uiop:getenv "PCL_PROGNAME"))
+           (filename (if pcl-progname (format nil "~A.lisp" pcl-progname)
+                         "main.lisp"))
+           (startup-file (pcl-relative-pathname +pcl-app-dir+ filename)))
       (when (uiop:file-exists-p startup-file)
         (load startup-file)))))
 
