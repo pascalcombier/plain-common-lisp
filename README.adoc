@@ -20,14 +20,16 @@
 :url-asdf-10:      http://fare.tunes.org/files/asdf3/asdf3-2014.pdf
 :url-iup:          http://webserver2.tecgraf.puc-rio.br/iup/
 :url-uiop:         https://asdf.common-lisp.dev/uiop.pdf
+:url-zstd:         https://github.com/facebook/zstd
 
 == Document versioning
 
 [cols="2,2,3,5",options="header"]
-|========================================================
+|==========================================================
 | Version | Date       | Author         | Comment
 | v0.1    | 2022-07-17 | Pascal COMBIER | Initial release
-|========================================================
+| v0.2    | 2022-07-23 | Pascal COMBIER | Add SLIME chapter
+|==========================================================
 
 == Introduction
 
@@ -51,13 +53,13 @@ immediately:
 
 image::docs/images/readme/07-winhttp-highlight.png[screenshot]
 
-The changes are persistent: libraries are still available after a
-plain-common-lisp restart.
+The changes are persistent: the installed libraries will be available after a
+restart.
 
 image::docs/images/readme/08-next-startup-highlight.png[screenshot]
 
 plain-common-lisp is basically a ready-to-use distribution of {url-sbcl}[SBCL]
-and {url-quicklisp}[Quicklisp]. The distribution is small and contains a few
+and {url-quicklisp}[Quicklisp]. The distribution is small and only contains a few
 files.
 
 ```
@@ -101,7 +103,7 @@ image::docs/images/readme/06-repl.png[screenshot]
 == Examples
 
 This chapter will describe how to use the plain-common-lisp project to develop
-and distribute several applications. These examples can be downloaded fom
+and distribute several applications. These examples can be downloaded from
 {url-releases}[the releases area] of plain-common-lisp.
 
 === Console Hello World! 
@@ -115,9 +117,8 @@ Initially, the "applications" directory is empty:
 
 image::docs/images/helloworld/01-applications-directory-empty.png[screenshot]
 
-This complete example is also available in the {url-releases}[latest release] of
-plain-common-lisp. We first need to create a directory "hello-world" and follow
-plain-common-lisp directory structure.
+We first need to create a directory "hello-world" and follow plain-common-lisp
+directory structure.
 
 image::docs/images/helloworld/01-applications-directory.png[screenshot]
 image::docs/images/helloworld/02-applications-directory-helloworld.png[screenshot]
@@ -128,7 +129,7 @@ most Common Lisp's projects.
 
 image::docs/images/helloworld/03-applications-directory-helloworld-sources.png[screenshot]
 
-The "hello-world.asd" defines the way to compile the source code of the
+The file "hello-world.asd" defines the way to compile the source code of the
 application. The format is {url-defsystem}[documented in the ASDF project].
 
 [source,lisp]
@@ -188,8 +189,8 @@ The file "hello-world.lisp" implements the "main" function.
 ----
 
 It's trivial to test such application because all the applications in the
- "applications" directory are automatically registred to ASDF at
- plain-common-lisp's startup:
+"applications" directory are automatically registered to ASDF at
+plain-common-lisp's startup:
 
 image::docs/images/helloworld/05-application-hello-world-test-highlight.png[screenshot]
 
@@ -238,9 +239,12 @@ any source code. This can be achieved by using the
 ----
 
 Note that the "compression" flag is not mandatory here. It's a SBCL feature
-which is not always enabled on the offical SBCL binaries for Windows. The SBCL
+which is not always enabled on the official SBCL binaries for Windows. The SBCL
 binaries of plain-common-lisp's always have this feature activated, allowing to
-trade a little bit of startup time for a smaller binary size.
+trade a little bit of startup time to get a smaller binary size. Note that since
+SBCL 2.2.6, {url-zstd}[the zstd from Facebook] is used for the compression. A
+compressed hello-world will typically take around 10.5 MiB and the startup time
+be negligible.
 
 image::docs/images/helloworld/11-save-lisp-and-die-highlight.png[screenshot]
 image::docs/images/helloworld/12-final-directory-with-exe-highlight.png[screenshot]
@@ -251,17 +255,198 @@ image::docs/images/helloworld/13-terminal-execution-highlight.png[screenshot]
 The applications directory contains directories. Each of these directory is
 composed of:
 
-* One or several ASDF systems available in the _sources_ directory. A ASDF
+* One or several ASDF systems available in the "sources" directory. A ASDF
   system is a directory containing a 'asd' file and the associated Lisp files.
 
-* Third-party Lisp code can be stored in _third-party/sources_. This is rarely
+* Third-party Lisp code can be stored in "third-party/sources". This is rarely
   needed but can be useful if there is some Lisp dependancies not available in
   Quicklisp. In such case, it's simply needed to copy the ASDF system directory
-  in this _third-party/sources/my-dependancy/_ directory. Obviously, this
+  in this "third-party/sources/my-dependancy/" directory. Obviously, this
   directory will also need to contain the ASDF system with the 'asd' file.
 
-* System-specifc binaries can be stored in the _third-party/bin_ directory. This
+* System-specifc binaries can be stored in the "third-party/bin" directory. This
   is required if the system is using DLL files.
+
+== SLIME configuration
+
+<<bookmark-slime,SLIME>> is a fantastic package working on {url-emacs}[GNU
+Emacs]. It allows to develop Common Lisp's applications in an interactive
+way. This package is compatible with plain-common-lisp.
+
+=== Install SLIME on GNU Emacs
+
+This chapter is based on a fresh installation of the vanilla GNU Emacs. The
+default package repository contains an old SLIME version which is not working
+properly. The third-party repository MELPA contains a good version. The first
+step is to add this MELPA repository to GNU Emacs.
+
+image::docs/images/slime-emacs-install-slime/01-emacs-starts.png[screenshot]
+
+Press `Alt-x` and then enter the command `customize-variable`.
+
+image::docs/images/slime-emacs-install-slime/02-customize-variable.png[screenshot]
+
+Input `package-archives`.
+
+image::docs/images/slime-emacs-install-slime/03-customize-variable-package-archives.png[screenshot]
+
+Click on `INS` to insert a new repository:
+
+- Name: MELPA
+- URL: https://melpa.org/packages/
+
+image::docs/images/slime-emacs-install-slime/04-add-melpa.png[screenshot]
+
+Click on "STATE" and then "Save for Future Sessions".
+
+image::docs/images/slime-emacs-install-slime/05-save-package-archives.png[screenshot]
+
+Restart GNU Emacs. This is not techically required but slighly simplier to
+document.
+
+image::docs/images/slime-emacs-install-slime/06-emacs-starts.png[screenshot]
+
+Press `Alt-x` and then enter the command `list-packages`. Wait a few seconds for
+the package list to be downloaded.
+
+image::docs/images/slime-emacs-install-slime/07-emacs-list-packages.png[screenshot]
+
+Find the MELPA version of "SLIME" and press `i` the mark the software for installation.
+
+image::docs/images/slime-emacs-install-slime/08-mark-slime-melpa.png[screenshot]
+
+Press `x` to start the installation.
+
+image::docs/images/slime-emacs-install-slime/09-confirm-install.png[screenshot]
+
+That's done, SLIME is installed on GNU Emacs.
+
+image::docs/images/slime-emacs-install-slime/10-slime-install-done.png[screenshot]
+
+=== Install SWANK in plain-common-lisp
+
+This chapter is based on a fresh installation of plain-common-lisp.
+
+image::docs/images/slime-pcl-install-swank/01-pcl-fresh-start.png[screenshot]
+
+Install SWANK from Quicklisp with the command `(ql:quickload "swank")`.
+
+image::docs/images/slime-pcl-install-swank/02-pcl-quickload-swank.png[screenshot]
+
+One can start a SWANK server with the function `(swank:create-server)` which
+will create a local server. By default, this server will listen on the port
+4005. This function will need to be called each time the application is
+executed.
+
+image::docs/images/slime-pcl-install-swank/03-pcl-swank-create-server.png[screenshot]
+
+Create a new Lisp file in the "applications" directory.
+
+image::docs/images/slime-pcl-install-swank/04-pcl-create-lisp-file.png[screenshot]
+
+For example, one can write a hello-world function.
+
+image::docs/images/slime-pcl-install-swank/05-create-hello-word.png[screenshot]
+
+At this stage, let's try to make Emacs connect to the plain-common-lisp
+process. Press `Alt-x` and type the command `slime-connect`.
+
+image::docs/images/slime-pcl-install-swank/06-slime-connect.png[screenshot]
+
+When prompted about which host to use, just validate: the default host
+`localhost` is perfectly fine.
+
+image::docs/images/slime-pcl-install-swank/07-slime-connect-localhost.png[screenshot]
+
+When prompted about which port to use, just validate: the default port
+`4005` is perfectly fine.
+
+image::docs/images/slime-pcl-install-swank/08-slime-connect-port.png[screenshot]
+
+That's it, SLIME is started and connected to the plain-common-lisp process.
+
+image::docs/images/slime-pcl-install-swank/09-slime-started.png[screenshot]
+
+To compile the `hello-world` function and send it to plain-common-lisp, it is
+simply needed to type `Ctrl-c Ctrl-c`. The result of the compilation will appear
+in the terminal below the source code. One can directly test the hello-world
+function by jumping in the REPL and typing the Common Lisp code `(hello-world)`.
+
+This is exactly why it is named _interactive_. The programmer write a function
+in its source code and test it immediately. If the function is working, the
+developer can save the file and then write a new function. The development of
+the program is done step-by-step in a incremental way.
+
+image::docs/images/slime-pcl-install-swank/10-slime-interaction.png[screenshot]
+
+In most of Common Lisp's programs there are different packages. By default,
+SLIME starts in the standard package `common-lisp-user` also named
+`CL-USER`. All the functions will be created in this package. If one want to
+switch to another package, he can:
+
+- Press `Alt-x` and then type the command `slime-repl-set-package`
+- Use the shortcut `Ctrl-c` then `Alt-p`
+
+The package names can be automatically completed when pressing the `TAB` key.
+
+In the example below, we have created a package "hello" exporting the "main"
+function. Then we asked SLIME to jump inside this package. At this point, we
+implemented the "main" function and tested it.
+
+image::docs/images/slime-pcl-install-swank/11-slime-packages.png[screenshot]
+
+=== Make the SLIME configuration persistent
+
+A full example is available and can be downloaded from {url-releases}[the
+releases area] of plain-common-lisp. We can make the assumption that the SWANK
+server might not be needed when delivering the application to the users. So it
+could be reasonable to consider 2 environments:
+
+- Development environment, starting SWANK server automatically
+- Production environment, without any SWANK server
+
+Creating a new environment simply means duplicating 2 files. Duplicate
+"plain-common-lisp.exe" into "plain-common-lisp-dev.exe". Duplicate
+"configs/plain-common-lisp.cfg" into "configs/plain-common-lisp-dev.cfg".
+
+image::docs/images/slime-persistent/01-dev-environment.png[screenshot]
+image::docs/images/slime-persistent/02-dev-config.png[screenshot]
+
+Then one simply need to write the "plain-common-lisp-dev" application startup
+file named "plain-common-lisp-dev.lisp".
+
+image::docs/images/slime-persistent/03-applications.png[screenshot]
+
+.plain-common-lisp-dev.lisp
+[source,lisp]
+----
+(asdf:load-system "swank")
+(swank:create-server)
+----
+
+When the program "plain-common-lisp-dev.exe" will be executed, it will try to
+load and execute the file "applications\plain-common-lisp-dev.lisp". This
+startup file will load SWANK and create a server.
+
+After that, we can just run the application "plain-common-lisp-dev.exe" and
+connect with SLIME from GNU Emacs. The SWANK server is started automatically.
+
+image::docs/images/slime-persistent/04-slime.png[screenshot]
+
+=== Known issues
+
+There is a second way to start SLIME from GNU Emacs from an executable
+file. This method is unfortunately not currently supported. The reason is
+technical, the SWANK package from Quicklisp implements its own FASL binaries
+relocation scheme. It does it in a way which is not compatible with
+plain-common-lisp.
+
+image::docs/images/slime-known-issues.png[screenshot]
+
+The FASL files from plain-common-lisp and SWANK being located in different
+directories, plain-common-lisp startup meets an error. If one successfuly modify
+SWANK so that he don't implement any custom FASL redirection, this issue would
+be solved.
 
 == External references
 
