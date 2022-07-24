@@ -433,20 +433,25 @@ connect with SLIME from GNU Emacs. The SWANK server is started automatically.
 
 image::docs/images/slime-persistent/04-slime.png[screenshot]
 
-=== Known issues
+== Known issues
 
-There is a second way to start SLIME from GNU Emacs from an executable
-file. This method is unfortunately not currently supported. The reason is
-technical, the SWANK package from Quicklisp implements its own FASL binaries
-relocation scheme. It does it in a way which is not compatible with
-plain-common-lisp.
+=== SLIME does not work when spawning plain-common-lisp executables
+
+This method is unfortunately not currently supported. The reason is technical,
+the SWANK package from Quicklisp implements its own FASL binaries relocation
+scheme. It does it in a way which is not compatible with plain-common-lisp.
 
 image::docs/images/slime-known-issues.png[screenshot]
 
 The FASL files from plain-common-lisp and SWANK being located in different
-directories, plain-common-lisp startup meets an error. If one successfuly modify
-SWANK so that he don't implement any custom FASL redirection, this issue would
-be solved.
+directories, plain-common-lisp startup meets an error when loading SWANK. If one
+successfuly modify SWANK so that he don't implement any custom FASL redirection,
+this issue would probably be solved.
+
+=== plain-common-lisp directories cannot be moved or renamed after initial installation
+
+This issue is known and being analysed. Current work-around: delete all the
+files from the cache directory.
 
 == External references
 
