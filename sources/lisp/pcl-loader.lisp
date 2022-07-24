@@ -104,7 +104,15 @@
 ;;; | GLOBAL VARIABLES                                                         |
 ;;; +--------------------------------------------------------------------------+
 
-(defvar pcl-root-dir nil "Root directory of plain-common-lisp's applications")
+(defvar pcl-root-dir nil
+  "Root directory of plain-common-lisp's applications")
+
+(defvar pcl-sbcl-default-libraries nil
+  "List containing all the foreign libraries opened by SBCL at startup")
+
+(defvar pcl-foreign-directories nil
+  "List of relative directories containing the DLLs at sb-ext:*save-hook*. This
+list is restored during sb-ext:*pre-foreign-init-hooks*")
 
 ;;; +--------------------------------------------------------------------------+
 ;;; | INITIALIZATION                                                           |
@@ -269,6 +277,75 @@ depandancy source, src for sources)."
     (asdf:initialize-source-registry (append '(:source-registry) isr-parameters '(:inherit-configuration)))))
 
 ;;; +--------------------------------------------------------------------------+
+;;; | FOREIGN LIBRARIES MANAGEMENT                                             |
+;;; +--------------------------------------------------------------------------+
+
+;;;
+;;; By default, SBCL try to save and restore open shared libraries from their
+;;; absolute pathnames. This probably works well on Unix-based systems, but this
+;;; is absolutely not working when you start an executable on Windows using
+;;; external DLLs.
+;;;
+;;; This part of the code is a small work-around:
+;;; - At startup, we save the initial list of open DLLs (msvcrt.dll, kernel32.dll, etc)
+;;; - When saving the image, we save the newly opened DLLs as a relative namestring list
+;;; - Just before SBCL's foreign engine is initialized, we re-open the saved libraries
+;;;
+;;; NOTE: might not work properly with libraries being relocated *or* library dependancies
+;;;
+;;; Vanilla SBCL does not have the hook sb-ext:*pre-foreign-init-hooks*,
+;;; plain-common-lisp use a slighly modified version of SBCL adding this new
+;;; hook.
+;;;
+
+(defun pathname-basename (pathname)
+  (format nil
+          "~A.~A"
+          (pathname-name pathname)
+          (pathname-type pathname)))
+
+(defun relativize-directory-pathname (pathname)
+  (let ((root-namestring     (uiop:native-namestring pcl-root-dir))
+        (pathname-namestring (uiop:native-namestring pathname)))
+    (when (uiop:string-prefix-p root-namestring pathname-namestring)
+      (let ((prefix-length (length root-namestring)))
+        (subseq pathname-namestring prefix-length)))))
+        
+(defun collect-foreign-libraries-information ()
+  (dolist (library sb-sys:*shared-objects*)
+    (unless (member library pcl-sbcl-default-libraries)
+      (let ((lib-pathname (sb-alien::shared-object-pathname library)))
+        ;; unload will remove the library from the list sb-sys:*shared-objects*,
+        ;; preventing SBCL from trying to re-load the library at next startup
+        ;; (i.e. preventing the runtime error to appear)
+        (sb-alien:unload-shared-object lib-pathname)
+        (format t "DLL ~A~%" (pathname-basename lib-pathname))
+        ;; remember that the library need to be loaded in sb-ext:*pre-foreign-init-hooks*
+        (pushnew (relativize-directory-pathname lib-pathname) pcl-foreign-directories)))))
+      
+(defun restore-foreign-library-information ()
+  (dolist (lib-name pcl-foreign-directories)
+    (let ((pathname (pcl-relative-pathname lib-name)))
+      (if (uiop:file-exists-p pathname)
+          ;; try to load the library at the indicated directory
+          (let ((printable-name (pathname-basename pathname)))
+            (format t "DLL ~A~%" printable-name)
+            (sb-alien:load-shared-object pathname))
+          ;; maybe the developper put all the DLLs near the executable
+          (let ((printable-name (pathname-basename pathname)))
+            (format t "DLL ~A~%" printable-name)
+            (sb-alien:load-shared-object (pcl-relative-pathname printable-name)))))))
+
+(defun configure-sbcl-hooks ()
+  ;; save the list of libraries opened at SBCL startup
+  (unless pcl-sbcl-default-libraries
+    (dolist (library sb-sys:*shared-objects*)
+      (pushnew library pcl-sbcl-default-libraries)))
+  ;; register hooks
+  (pushnew #'collect-foreign-libraries-information sb-ext:*save-hooks*)
+  (pushnew #'restore-foreign-library-information   sb-ext:*pre-foreign-init-hooks*))
+
+;;; +--------------------------------------------------------------------------+
 ;;; | WELCOME MESSAGE                                                          |
 ;;; +--------------------------------------------------------------------------+
 
@@ -293,6 +370,7 @@ depandancy source, src for sources)."
   (setf pcl-root-dir (if from-standalone-executable
                          (standalone-get-root-dir)
                          (plainstarter-get-root-dir)))
+  (configure-sbcl-hooks)
   (format t "~A~%" (first (uiop:raw-command-line-arguments)))
   (format t "Working directory '~A'~%" (uiop:getcwd))
   (format t "Default directory '~A'~%" *default-pathname-defaults*)
