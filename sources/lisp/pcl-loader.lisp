@@ -97,8 +97,8 @@
 (defconstant +pcl-lib-dir+           "libraries/")
 (defconstant +pcl-app-dir+           "applications/")
 (defconstant +pcl-app-subdir-dll+    "third-party/binaries/")
-(defconstant +pcl-app-subdir-asdf+   "sources/")
-(defconstant +pcl-app-subdir-lib+    "third-party/sources/")
+(defconstant +pcl-app-subdir-sys+    "systems/")
+(defconstant +pcl-app-subdir-lib+    "third-party/systems/")
 
 ;;; +--------------------------------------------------------------------------+
 ;;; | GLOBAL VARIABLES                                                         |
@@ -173,7 +173,7 @@ depandancy source, src for sources)."
          (or
           (pcl-compute-filename file "third-party/quicklisp-repository/dists/quicklisp/software" "qls")
           (pcl-compute-filename file "third-party/quicklisp-repository/quicklisp"                "ql")
-          (pcl-compute-filename file "third-party/sources"                                       "dep")
+          (pcl-compute-filename file "third-party/systems"                                       "dep")
           (pcl-compute-filename file "libraries"                                                 "lib")
           (pcl-compute-filename file "applications"                                              "src"))))
     (if new-filename
@@ -244,14 +244,14 @@ depandancy source, src for sources)."
         (cffi-directories (uiop:find-symbol* :*foreign-library-directories* :cffi nil)))
     ;; If "initialize" is called from a standalone executable,
     ;; cffi:*foreign-library-directories* need to be overridden with new value.
-    (setf (symbol-value cffi-directories) nil)
+    (setf (symbol-value cffi-directories) (list pcl-root-dir))
     (push pcl-root-dir (symbol-value cffi-directories))
     ;; List the libraries and applications
     (dolist (app-dir (append (pcl-subdirectories +pcl-lib-dir+)
                              (pcl-subdirectories +pcl-app-dir+)))
-      (let ((dll-dir (pcl-relative-pathname +pcl-app-subdir-dll+  app-dir))
-            (src-dir (pcl-relative-pathname +pcl-app-subdir-asdf+ app-dir))
-            (dep-dir (pcl-relative-pathname +pcl-app-subdir-lib+  app-dir)))
+      (let ((dll-dir (pcl-relative-pathname +pcl-app-subdir-dll+ app-dir))
+            (src-dir (pcl-relative-pathname +pcl-app-subdir-sys+ app-dir))
+            (dep-dir (pcl-relative-pathname +pcl-app-subdir-lib+ app-dir)))
         ;; For each application, add the "third-party/binaries/" to the CFFI
         ;; search path if the directory exists
         (when (uiop:directory-exists-p dll-dir)
