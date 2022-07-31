@@ -110,9 +110,10 @@
 (defvar pcl-sbcl-default-libraries nil
   "List containing all the foreign libraries opened by SBCL at startup")
 
-(defvar pcl-foreign-directories nil
-  "List of relative directories containing the DLLs at sb-ext:*save-hook*. This
-list is restored during sb-ext:*pre-foreign-init-hooks*")
+(defvar pcl-foreign-libraries nil
+  "List of relative directories pathnames containing the DLLs at
+sb-ext:*save-hook*. This list is restored during
+sb-ext:*pre-foreign-init-hooks*")
 
 ;;; +--------------------------------------------------------------------------+
 ;;; | INITIALIZATION                                                           |
@@ -160,7 +161,7 @@ save-lisp-and-die."
     (when matched-position
       (let* ((dir-length (length directory-str))
              (result-1   (subseq unix-namestring (+ matched-position dir-length)))
-             (result-2   (substitute #\- #\/ result-1)))        
+             (result-2   (substitute #\- #\/ result-1)))
            (concatenate 'string prefix result-2)))))
 
 (defun pcl-relocate-fasl (file designator)
@@ -298,43 +299,57 @@ depandancy source, src for sources)."
 ;;; hook.
 ;;;
 
-(defun pathname-basename (pathname)
-  (format nil
-          "~A.~A"
-          (pathname-name pathname)
-          (pathname-type pathname)))
-
 (defun relativize-directory-pathname (pathname)
   (let ((root-namestring     (uiop:native-namestring pcl-root-dir))
         (pathname-namestring (uiop:native-namestring pathname)))
     (when (uiop:string-prefix-p root-namestring pathname-namestring)
       (let ((prefix-length (length root-namestring)))
         (subseq pathname-namestring prefix-length)))))
-        
+
+(defun load-library-success (pathname)
+  (let ((success t))
+    (handler-bind
+        ((error (lambda (condition)
+                  (setf success nil))))
+      ;; try to load libary
+      (sb-alien:load-shared-object pathname)
+      (format t "DLL ~A~%" pathname))
+    ;; return value
+    success))
+
 (defun collect-foreign-libraries-information ()
   (dolist (library sb-sys:*shared-objects*)
     (unless (member library pcl-sbcl-default-libraries)
-      (let ((lib-pathname (sb-alien::shared-object-pathname library)))
+      (let* ((library-pathname    (sb-alien::shared-object-pathname library))
+             (relative-namestring (relativize-directory-pathname library-pathname)))
         ;; unload will remove the library from the list sb-sys:*shared-objects*,
-        ;; preventing SBCL from trying to re-load the library at next startup
-        ;; (i.e. preventing the runtime error to appear)
-        (sb-alien:unload-shared-object lib-pathname)
-        (format t "DLL ~A~%" (pathname-basename lib-pathname))
-        ;; remember that the library need to be loaded in sb-ext:*pre-foreign-init-hooks*
-        (pushnew (relativize-directory-pathname lib-pathname) pcl-foreign-directories)))))
-      
+        ;; preventing SBCL from trying to re-load the library at the next
+        ;; startup
+        (sb-alien:unload-shared-object library-pathname)
+        ;; save the namestring in order to manually restore it at the next startup
+        (if relative-namestring
+            (pushnew relative-namestring pcl-foreign-libraries)
+            (pushnew (uiop:native-namestring library-pathname) pcl-foreign-libraries)))))
+  ;; Display the list for information
+  (dolist (foreign-library pcl-foreign-libraries)
+    (format t "DLL ~A~%" foreign-library)))
+
 (defun restore-foreign-library-information ()
-  (dolist (lib-name pcl-foreign-directories)
-    (let ((pathname (pcl-relative-pathname lib-name)))
-      (if (uiop:file-exists-p pathname)
-          ;; try to load the library at the indicated directory
-          (let ((printable-name (pathname-basename pathname)))
-            (format t "DLL ~A~%" printable-name)
-            (sb-alien:load-shared-object pathname))
-          ;; maybe the developper put all the DLLs near the executable
-          (let ((printable-name (pathname-basename pathname)))
-            (format t "DLL ~A~%" printable-name)
-            (sb-alien:load-shared-object (pcl-relative-pathname printable-name)))))))
+  (dolist (namestring pcl-foreign-libraries)
+    ;; first case: try to load system liraries (i.e. "gdi32" "opengl32" etc)
+    (unless (load-library-success namestring)
+      ;; second case: the library is in the same directory as previously located
+      (let ((pathname-candidate-1 (pcl-relative-pathname namestring)))
+        (unless (load-library-success pathname-candidate-1)
+          ;; last case: the library has been moved and is now beside the executable
+          (let* ((basename (format nil
+                                   "~A.~A"
+                                   (pathname-name pathname-candidate-1)
+                                   (or (pathname-type pathname-candidate-1) "dll")))
+                 (pathname-candidate-2 (pcl-relative-pathname basename)))
+            (unless (load-library-success pathname-candidate-2)
+              (format t "WARNING: could not restore the library~%")
+              (format t "~A~%" namestring))))))))
 
 (defun configure-sbcl-hooks ()
   ;; save the list of libraries opened at SBCL startup
