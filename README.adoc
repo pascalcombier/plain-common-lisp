@@ -21,6 +21,7 @@
 :url-iup:          http://webserver2.tecgraf.puc-rio.br/iup/
 :url-uiop:         https://asdf.common-lisp.dev/uiop.pdf
 :url-zstd:         https://github.com/facebook/zstd
+:url-rh:           http://www.angusj.com/resourcehacker/
 
 == Document versioning
 
@@ -29,6 +30,7 @@
 | Version | Date       | Author         | Comment
 | v0.1    | 2022-07-17 | Pascal COMBIER | Initial release
 | v0.2    | 2022-07-23 | Pascal COMBIER | Add SLIME chapter
+| v0.3    | 2022-07-31 | Pascal COMBIER | Add examples
 |==========================================================
 
 == Introduction
@@ -44,7 +46,7 @@ applications on Microsoft Windows:
 image::docs/images/readme/03-workspace-directory-highlight.png[screenshot]
 image::docs/images/readme/06-repl.png[screenshot]
 
-At this point, the Common Lisp's REPL is ready and the user can already work
+At this point, the Common Lisp's REPL is ready, and the user can already work
 with all {url-ql-releases}[the third-party libraries] available from Quicklisp!
 This makes Common Lisp a good candidate for writing {url-fare-1}[small programs]
 and {url-fare-2}[utilities]. Thousands of Common Lisp's libraries are available,
@@ -100,12 +102,182 @@ image::docs/images/readme/04-first-execution.png[screenshot]
 image::docs/images/readme/05-workspace-cache-populated.png[screenshot]
 image::docs/images/readme/06-repl.png[screenshot]
 
+== Examples
+
+This chapter will describe how to use the plain-common-lisp project to develop
+and distribute Common Lisp applications. All the examples can be downloaded from
+{url-releases}[the releases area] of plain-common-lisp.
+
+=== Console Hello World! 
+
+Let's write a _Hello-World_ application with plain-common-lisp. To do that, one
+just need to extract the last release of plain-common-lisp project:
+
+image::docs/images/hello-world/01-plain-common-lisp-directory.png[screenshot]
+
+The "applications" directory is initially empty:
+
+image::docs/images/hello-world/02-applications-directory-empty.png[screenshot]
+
+One first need to create a directory "hello-world" to store the files for the
+application "hello-world".
+
+image::docs/images/hello-world/03-applications-directory-non-empty.png[screenshot]
+image::docs/images/hello-world/04-applications-directory-hello-world.png[screenshot]
+
+Each application contains a directory named "systems". This directory must
+contain at least one ASDF system. Nothing specific to plain-common-lisp here,
+this structure is common to most Common Lisp's projects.
+
+The optional "third-party" directory is not used in this example. It can be used
+to store third-party systems and third-party binaries (i.e. DDL files).
+
+image::docs/images/hello-world/05-applications-directory-hello-world-sources.png[screenshot]
+
+The file "hello-world.asd" defines the way to compile the source code of the
+application. The format is {url-defsystem}[documented in the ASDF project].
+
+[source,lisp]
+----
+;;; +----------+-------------------------------------------------------+
+;;; | Info     | Value                                                 |
+;;; +----------+-------------------------------------------------------+
+;;; | Filename | hello-world.asd                                       |
+;;; | Project  | plain-command-lisp-examples                           |
+;;; +------------------------------------------------------------------+
+
+(asdf:defsystem #:hello-world
+    :description "Hello world for plain-common-lisp"
+    :author      "Pascal COMBIER"
+    :license     "BSD"
+    :components
+     ((:file "package")
+      (:file "hello-world" :depends-on ("package"))))
+----
+
+The "package.lisp" file describe the package "hello-world" which exports the
+"main" function:
+
+[source,lisp]
+----
+;;; +----------+-------------------------------------------------------+
+;;; | Info     | Value                                                 |
+;;; +----------+-------------------------------------------------------+
+;;; | Filename | package.lisp                                          |
+;;; | Project  | plain-command-lisp-examples                           |
+;;; +----------+-------------------------------------------------------+
+
+(defpackage #:hello-world
+  (:use
+   #:common-lisp)
+  (:export #:main))
+----
+
+The file "hello-world.lisp" implements the "main" function.
+
+[source,lisp]
+----
+;;; +----------+-------------------------------------------------------+
+;;; | Info     | Value                                                 |
+;;; +----------+-------------------------------------------------------+
+;;; | Filename | hello-world.lisp                                      |
+;;; | Project  | plain-command-lisp-examples                           |
+;;; +----------+-------------------------------------------------------+
+
+(in-package :hello-world)
+
+;;--------------------------------------------------------------------;;
+;; IMPLEMENTATION                                                     ;;
+;;--------------------------------------------------------------------;;
+
+(defun main ()
+  (format t "Hello World!~%"))
+----
+
+It's trivial to test such application because all the applications in the
+"applications" directory are automatically registered to ASDF at
+plain-common-lisp's startup:
+
+image::docs/images/hello-world/06-application-hello-world-test-highlight.png[screenshot]
+
+To distribute this application, one way could be to distribute it with its
+source code. An easy approach would be to _duplicate_ "plain-common-lisp.exe"
+into "hello-world.exe" and _duplicate_ "configs/plain-common-lisp.cfg" into
+"configs/hello-world.cfg".
+
+Note that "plain-common-lisp.exe" is actually a copy of the executable from
+{url-plainstarter}[the plain-starter project].
+
+image::docs/images/hello-world/07-application-hello-world-duplicate-exe.png[screenshot]
+image::docs/images/hello-world/08-application-hello-world-duplicate-cfg.png[screenshot]
+
+The last step would be to create an application starter file in the applications
+directory.
+
+image::docs/images/hello-world/09-application-hello-world-starter.png[screenshot]
+
+.hello-world.lisp
+[source,lisp]
+----
+(asdf:load-system "hello-world")
+(hello-world:main)
+----
+
+Executing "hello-world.exe" will have the behavior that everyone expects:
+
+image::docs/images/hello-world/10-application-hello-world-exe.png[screenshot]
+image::docs/images/hello-world/11-application-hello-world-execution.png[screenshot]
+
+The final step before creating a ZIP file and distribute this application would
+be to delete the unnecessary files: "plain-common-lisp.exe",
+"configs/plain-common-lisp.cfg" and remove all the files from the cache
+directory.
+
+image::docs/images/hello-world/12-application-hello-world-final.png[screenshot]
+
+A second way would be to distribute this application as a standalone binary
+file, without any source code attached. This can be achieved by using the
+{url-save-and-die}[save-lisp-and-die] function from SBCL.
+
+[source,lisp]
+----
+(sb-ext:save-lisp-and-die "hello-world-standalone.exe" :toplevel #'hello-world:main :executable t :compression t)
+----
+
+Note that the "compression" flag is not mandatory here. It's a SBCL feature
+which is not always enabled on the official SBCL binaries for Windows. The SBCL
+binaries of plain-common-lisp's always have this feature activated, allowing to
+trade a little bit of startup time to get a smaller binary size. Note that since
+SBCL 2.2.6, {url-zstd}[the zstd from Facebook] is used for the compression. A
+compressed hello-world will typically take 12.5 MiB and the startup time be
+negligible.
+
+image::docs/images/hello-world/13-application-hello-world-save-lisp-and-die.png[screenshot]
+image::docs/images/hello-world/14-application-hello-world-standalone.png[screenshot]
+image::docs/images/hello-world/15-application-hello-world-standalone-exec.png[screenshot]
+
+That's it! The application can be distributed to its users.
+
+It is possible to change the icon present in the executable file without
+recompiling the program. The cost-free proprietary program {url-rh}[Resource
+Hacker] v4.5.30 has been reported working with plain-common-lisp's executable
+files.
+
+image::docs/images/hello-world/17-application-hello-world-standalone-icon.png[screenshot]
+image::docs/images/hello-world/18-application-hello-world-standalone-icon.png[screenshot]
+image::docs/images/hello-world/19-application-hello-world-standalone-properties.png[screenshot]
+
+== SLIME configuration
+
 === Install SLIME on GNU Emacs
 
 This chapter is based on a fresh installation of the vanilla GNU Emacs. The
 default package repository contains an old SLIME version which is not working
 properly. The third-party repository MELPA contains a good version. The first
 step is to add this MELPA repository to GNU Emacs.
+
+Note that SLIME refers to the package for GNU Emacs and SWANK refers to the
+implementation of a debugging server embedded in the application.
 
 image::docs/images/slime-emacs-install-slime/01-emacs-starts.png[screenshot]
 
@@ -260,9 +432,35 @@ connect with SLIME from GNU Emacs. The SWANK server is started automatically.
 
 image::docs/images/slime-persistent/04-slime.png[screenshot]
 
-== Known issues
+== Technical information
 
-=== SLIME does not work when spawning plain-common-lisp executables
+=== Application startup
+
+To explain how plain-common-lisp's application, it's convenient to describe how
+the "hello-world" example is started.
+
+. The user starts "hello-world.exe"
+
+. hello-world.exe will look for "config/hello-world.cfg", register the
+environment variable PCL_PROGNAME as "hello-world" and starts sbcl.exe
+
+. sbcl.exe will initialize plain-common-lisp with the file
+"sources/pcl-loader.lisp"
+
+. pcl-loader.lisp will start "applications\%PCL_PROGNAME.lisp", in our case
+"applications\hello-world.lisp"
+
+This way seems complex but has several advantages:
+
+- One plain-common-lisp directory can host several applications sharing a common
+  source code.
+
+- All the applications use the same sbcl.exe, sbcl.core and contribs, making the
+  system simple to maintain and update.
+
+=== Known issues
+
+==== SLIME does not work when spawning plain-common-lisp executables
 
 This method is unfortunately not currently supported. The reason is technical,
 the SWANK package from Quicklisp implements its own FASL binaries relocation
@@ -275,10 +473,31 @@ directories, plain-common-lisp startup meets an error when loading SWANK. If one
 successfuly modify SWANK so that he don't implement any custom FASL redirection,
 this issue would probably be solved.
 
-=== plain-common-lisp directories cannot be moved or renamed after initial installation
+==== plain-common-lisp directories cannot be moved or renamed after initial installation
 
 This issue is known and being analysed. Current work-around: delete all the
 files from the cache directory.
+
+=== SBCL changes
+
+plain-common-lisp does not work completely with the vanilla SBCL, a few changes
+have been made on SBCL:
+
+- The additional hook sb-ext:*pre-foreign-init-hooks* has been added. It is
+  called just before the initialization of the foreign module, allowing DLL
+  files to be relocated at runtime, and therefore allowing plain-common-lisp's
+  applications to be moved accross the disk.
+
+- A manifest file has been added to the binary file, allowing
+  plain-common-lisp's GUIs to enable Windows visual styles.
+
+- The default icon of sbcl.exe has been replaced with plainstarter's icon, to
+  make it clear that the 2 binaries are different.
+
+- The compression option has been activated (it does not seem to be activated in
+  all the builds for Windows).
+
+- Static linking has been activated to avoid the need for libzstd.dll.
 
 == External references
 
