@@ -310,6 +310,7 @@ depandancy source, src for sources)."
   (let ((success t))
     (handler-bind
         ((error (lambda (condition)
+                  (declare (ignore condition))
                   (setf success nil))))
       ;; try to load libary
       (sb-alien:load-shared-object pathname)
