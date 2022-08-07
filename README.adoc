@@ -22,6 +22,11 @@
 :url-uiop:         https://asdf.common-lisp.dev/uiop.pdf
 :url-zstd:         https://github.com/facebook/zstd
 :url-rh:           http://www.angusj.com/resourcehacker/
+:url-cat:          https://en.wikipedia.org/wiki/Cat_(Unix)
+:url-cffi:         https://cffi.common-lisp.dev/manual/cffi-manual.html
+:url-cl-iup:       https://github.com/klimenko-serj/cl-iup
+:url-ftw:          https://github.com/fjames86/ftw/tree/master/examples/tetris
+:url-ltk:          http://www.peter-herth.de/ltk/
 
 == Document versioning
 
@@ -130,7 +135,7 @@ contain at least one ASDF system. Nothing specific to plain-common-lisp here,
 this structure is common to most Common Lisp's projects.
 
 The optional "third-party" directory is not used in this example. It can be used
-to store third-party systems and third-party binaries (i.e. DDL files).
+to store third-party systems and third-party binaries (i.e. DLL files).
 
 image::docs/images/hello-world/05-applications-directory-hello-world-sources.png[screenshot]
 
@@ -143,7 +148,7 @@ application. The format is {url-defsystem}[documented in the ASDF project].
 ;;; | Info     | Value                                                 |
 ;;; +----------+-------------------------------------------------------+
 ;;; | Filename | hello-world.asd                                       |
-;;; | Project  | plain-command-lisp-examples                           |
+;;; | Project  | plain-common-lisp-examples                            |
 ;;; +------------------------------------------------------------------+
 
 (asdf:defsystem #:hello-world
@@ -164,7 +169,7 @@ The "package.lisp" file describe the package "hello-world" which exports the
 ;;; | Info     | Value                                                 |
 ;;; +----------+-------------------------------------------------------+
 ;;; | Filename | package.lisp                                          |
-;;; | Project  | plain-command-lisp-examples                           |
+;;; | Project  | plain-common-lisp-examples                            |
 ;;; +----------+-------------------------------------------------------+
 
 (defpackage #:hello-world
@@ -181,7 +186,7 @@ The file "hello-world.lisp" implements the "main" function.
 ;;; | Info     | Value                                                 |
 ;;; +----------+-------------------------------------------------------+
 ;;; | Filename | hello-world.lisp                                      |
-;;; | Project  | plain-command-lisp-examples                           |
+;;; | Project  | plain-common-lisp-examples                            |
 ;;; +----------+-------------------------------------------------------+
 
 (in-package :hello-world)
@@ -266,6 +271,75 @@ files.
 image::docs/images/hello-world/17-application-hello-world-standalone-icon.png[screenshot]
 image::docs/images/hello-world/18-application-hello-world-standalone-icon.png[screenshot]
 image::docs/images/hello-world/19-application-hello-world-standalone-properties.png[screenshot]
+
+=== Other examples
+
+All the other examples can be downloaded from {url-releases}[the releases area]
+of plain-common-lisp. For each example, the program
+"make-standalone-executable.exe" will generate a standalone executable from the
+provided Lisp sources.
+
+All the examples should be a little bit slow to start at the first
+execution. This is perfectly normal because plain-common-lisp will download and
+install Quicklisp from the internet and compile it. The "cache" directory will
+then be populated with the results of the compilation. This could take up to a
+couple of minutes on old systems. The following executions will be much
+faster. The executions from the standalone executables will be quite fast.
+
+==== plain-common-lisp-swank
+
+image::docs/images/slime-pcl-install-swank/11-slime-packages.png[screenshot]
+
+This example shows how to integrate plain-common-lisp with GNU Emacs and
+SLIME. "plain-common-lisp-swank.exe" will start a SWANK server so that SLIME
+could connect to it and interact with plain-common-lisp. More details are
+available in a dedicated chapter of this document.
+
+==== console-hello-world
+
+image::docs/images/hello-world/15-application-hello-world-standalone-exec.png[screenshot]
+
+==== console-cat
+
+image::docs/images/examples/example-cat.png[screenshot]
+
+This example shows how to write console applications with
+plain-common-lisp. Here "cat" refers to {url-cat}[the cat command from Unix].
+
+==== gui-helloworld-win32
+
+image::docs/images/examples/example-helloworld-win32.png[screenshot]
+
+This example shows how to use {url-cffi}[CFFI] to access the Win32 API.
+
+==== gui-helloworld-iup
+
+image::docs/images/examples/example-helloworld-iup.png[screenshot]
+
+This example shows how to use the {url-cl-iup}[CL-IUP package] with
+plain-common-lisp.
+
+==== gui-paint-tk
+
+image::docs/images/examples/example-paint-tk.png[screenshot]
+
+This example shows how to use the {url-ltk}[ltk library] with
+plain-common-lisp. LTK will use the Tk binaries from Tcl/Tk and will require the
+program "wish.exe" to be shipped with the application. "wish.exe" is included
+with the example.
+
+==== gui-ftw-tetris
+
+image::docs/images/examples/example-tetris.png[screenshot]
+
+This example shows how to use the {url-ftw}[ftw library] with plain-common-lisp.
+
+==== gui-opengl
+
+image::docs/images/examples/example-opengl.png[screenshot]
+
+This example simply integrates an example from the "cl-glut-examples" available
+on Quicklisp.
 
 == SLIME configuration
 
