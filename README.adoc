@@ -36,6 +36,7 @@
 | v0.1    | 2022-07-17 | Pascal COMBIER | Initial release
 | v0.2    | 2022-07-23 | Pascal COMBIER | Add SLIME chapter
 | v0.3    | 2022-07-31 | Pascal COMBIER | Add examples
+| v0.4    | 2022-08-13 | Pascal COMBIER | Fix issues
 |==========================================================
 
 == Introduction
@@ -72,6 +73,7 @@ files.
 ```
 plain-common-lisp
 │   plain-common-lisp.exe
+│   plain-common-lisp-help.txt
 │   README.md
 ├───applications
 ├───cache
@@ -521,7 +523,7 @@ environment variable PCL_PROGNAME as "hello-world" and starts sbcl.exe
 . sbcl.exe will initialize plain-common-lisp with the file
 "sources/pcl-loader.lisp"
 
-. pcl-loader.lisp will start "applications\%PCL_PROGNAME.lisp", in our case
+. pcl-loader.lisp will start "applications\%PCL_PROGNAME%.lisp", in our case
 "applications\hello-world.lisp"
 
 This way seems complex but has several advantages:
@@ -531,26 +533,6 @@ This way seems complex but has several advantages:
 
 - All the applications use the same sbcl.exe, sbcl.core and contribs, making the
   system simple to maintain and update.
-
-=== Known issues
-
-==== SLIME does not work when spawning plain-common-lisp executables
-
-This method is unfortunately not currently supported. The reason is technical,
-the SWANK package from Quicklisp implements its own FASL binaries relocation
-scheme. It does it in a way which is not compatible with plain-common-lisp.
-
-image::docs/images/slime-known-issues.png[screenshot]
-
-The FASL files from plain-common-lisp and SWANK being located in different
-directories, plain-common-lisp startup meets an error when loading SWANK. If one
-successfuly modify SWANK so that he don't implement any custom FASL redirection,
-this issue would probably be solved.
-
-==== plain-common-lisp directories cannot be moved or renamed after initial installation
-
-This issue is known and being analysed. Current work-around: delete all the
-files from the cache directory.
 
 === SBCL changes
 
@@ -572,6 +554,21 @@ have been made on SBCL:
   all the builds for Windows).
 
 - Static linking has been activated to avoid the need for libzstd.dll.
+
+=== Known issues
+
+==== SLIME does not work when spawning plain-common-lisp executables
+
+This method is unfortunately not currently supported. The reason is technical,
+the SWANK package from Quicklisp implements its own FASL binaries relocation
+scheme. It does it in a way which is not compatible with plain-common-lisp.
+
+image::docs/images/slime-known-issues.png[screenshot]
+
+The FASL files from plain-common-lisp and SWANK being located in different
+directories, plain-common-lisp startup meets an error when loading SWANK. If one
+successfuly modify SWANK so that he don't implement any custom FASL redirection,
+this issue would probably be solved.
 
 == External references
 
