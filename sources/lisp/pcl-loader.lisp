@@ -57,17 +57,17 @@
 ;;;
 ;;; Performances
 ;;;
-;;;   The loading time is not very fast, especially on older computer. This is
+;;;   The loading time is not very fast, especially on older computers. This is
 ;;;   probably not an issue for most usages. If this is a real problem, the
 ;;;   developer still can generate an executable file with the function
 ;;;   save-lisp-and-die and the loading time will be much faster. The tests on a
 ;;;   laptop from 2011 (Intel 2310M) shows the following performances:
-;;;   * load time: 3.1 seconds (totally)
-;;;     * initialize-asdf         0.01 ( 0%)
-;;;     * initialize-quicklisp    1.54 (49%)
-;;;     * initialize-cffi         1.18 (37%)
-;;;     * print-quicklisp-systems 0.38 (12%)
-;;;     * initialize-applications 0.05 ( 2%)
+;;;   * load time: 2.78 seconds (totally)
+;;;     * initialize-asdf         0.01  ( 0%)
+;;;     * initialize-quicklisp    0.79  (27%)
+;;;     * initialize-cffi         1.62  (54%)
+;;;     * print-quicklisp-systems 0.49  (16%)
+;;;     * initialize-applications 0.07  ( 2%)
 ;;;
 
 (format t "Loading plain-common-lisp~%")
@@ -134,7 +134,8 @@ pcl-root-dir/third-party/bin/sbcl.exe."
 (defun standalone-get-root-dir ()
   "This function can be called to update the pathnames at run-time. It can be
 useful if plain-common-lisp is called from a binary file generated from
-save-lisp-and-die."
+save-lisp-and-die and want to provide a full Common Lisp + Quicklisp
+experience."
   (let* ((arg0-string       (first (uiop:raw-command-line-arguments)))
          (arg0-pathname     (uiop:parse-native-namestring arg0-string))
          (arg0-dir-pathname (uiop:pathname-directory-pathname arg0-pathname)))
@@ -168,7 +169,7 @@ save-lisp-and-die."
   "Function called by ASDF to locate FASL binary files. Store all the FASL files
 in the same directory with a specific prefix according to the original
 directory (ql- for quicklisp, qls- for quicklisp-installed library, dep- for
-depandancy source, src for sources)."
+dependancy source, src for sources)."
   (declare (ignorable designator))
   (let ((new-filename
          (or
@@ -190,27 +191,115 @@ depandancy source, src for sources)."
      :ignore-inherited-configuration)))
 
 ;;; +--------------------------------------------------------------------------+
+;;; | QUICKLISP MISSING FUNCTIONS                                              |
+;;; +--------------------------------------------------------------------------+
+
+;; Quicklisp system is not 100% standalone. By design, the package ql-setup is
+;; not included inside the Quicklisp system. So, if one try to use the Quicklisp
+;; functions, the system will report an error during the execution because of
+;; the missing functions qmerge and qenough. This is actually very handy. We
+;; just need to implement this package here and we get a Quicklisp installation
+;; which can be moved accross the disk just like PortableApps.
+;;
+;; The implementation is actually mostly a copy of the original implementation
+;; in setup.lisp. With the exception of *quicklisp-home* which is configured
+;; in initialize-quicklisp.
+
+(defpackage #:ql-setup
+  (:use #:cl)
+  (:export #:*quicklisp-home*
+           #:qmerge
+           #:qenough))
+
+(in-package #:ql-setup)
+
+(defvar *quicklisp-home* nil)
+
+(defun qmerge (pathname)
+  (merge-pathnames pathname *quicklisp-home*))
+
+(defun qenough (pathname)
+  (enough-namestring pathname *quicklisp-home*))
+
+(in-package #:pcl)
+
+;;; +--------------------------------------------------------------------------+
+;;; | QUICKLISP PATCH                                                          |
+;;; +--------------------------------------------------------------------------+
+
+;;; Unfortunately, bundle.lisp has a small portability issue because the
+;;; function write-loader-script creates a pathname at load-time. If the
+;;; application directory is being moved to another location, the pathname
+;;; become invalid.
+;;;
+;;; Here we patch the source code right after Quicklisp installation.
+
+;; patched write-loader-script function use ql-setup:qmerge
+(defvar write-loader-code "(defmethod write-loader-script ((bundle bundle) stream)
+  (let ((template-lines
+         (load-time-value
+          (with-open-file (stream (ql-setup:qmerge \"quicklisp/bundle-template.lisp\"))
+            (loop for line = (read-line stream nil)
+                  while line collect line)))))
+    (dolist (line template-lines)
+      (write-line line stream))))
+")
+
+(defun patch-quicklisp ()
+  (let* ((filename-orig (pcl-relative-pathname "third-party/quicklisp-repository/quicklisp/bundle.lisp"))
+         (filename-copy (pcl-relative-pathname "third-party/quicklisp-repository/quicklisp/bundle-orig.lisp"))
+         (lines         (uiop:read-file-lines filename-orig))
+         (state         'copy-code-before))
+    ;; keep a version of the original code before patch
+    (uiop:rename-file-overwriting-target filename-orig filename-copy)
+    ;; patch the original file
+    (with-open-file (stream filename-orig :direction :output)
+      (dolist (line lines)
+        (cond
+          ;; Copy all the lines before method "write-loader-script"
+          ((eq state 'copy-code-before)
+           (if (uiop:string-prefix-p "(defmethod write-loader-script ((bundle bundle) stream)" line)
+               (setq state 'find-next-function)
+               (write-line line stream)))
+          ;; Insert new version of "write-loader-script"
+          ((eq state 'find-next-function)
+           (when (uiop:string-prefix-p "(defun coerce-to-directory (pathname)" line)
+             (write-line write-loader-code stream)
+             (write-line line stream)
+             (setq state 'copy-code-after)))
+          ;; Copy all the lines after
+          ((eq state 'copy-code-after)
+           (write-line line stream)))))))
+
+;;; +--------------------------------------------------------------------------+
 ;;; | INITIALIZE QUICKLISP                                                     |
 ;;; +--------------------------------------------------------------------------+
 
 (defun initialize-quicklisp ()
-  ;; Load Quicklisp *silently* (except for errors) by redirecting the standard
-  ;; streams.
-  (let* ((*error-output*    *standard-output*)
-         (*standard-output* (make-broadcast-stream))
-         (ql-init-file      (pcl-relative-pathname +pcl-ql-init-file+)))
-    (load ql-init-file))
-  ;; Install Quicklisp if necessary
+  ;; Setting *quicklisp-home* is required early because
+  ;; quicklisp-quickstart:install will use qmerge and qenough functions.
+  (setf ql-setup:*quicklisp-home* (pcl-relative-pathname "third-party/quicklisp-repository/"))
+  ;; Download and install Quicklisp from the Internet if necessary
   (let ((ql-setup-file (pcl-relative-pathname "setup.lisp" +pcl-ql-repository-dir+)))
-    ;; if directory is empty, reinstall Quicklisp from the Internet
     (unless (uiop:file-exists-p ql-setup-file)
+      ;; Initialize Quicklisp by loading quicklisp.lisp *silently* (except for
+      ;; errors) by redirecting the standard streams.
+      (let* ((*error-output*    *standard-output*)
+             (*standard-output* (make-broadcast-stream))
+             (ql-init-file      (pcl-relative-pathname +pcl-ql-init-file+)))
+        (load ql-init-file))
+      ;; Download and install Quicklisp
       (uiop:with-current-directory (pcl-root-dir)
-        (uiop:symbol-call :quicklisp-quickstart :install :path +pcl-ql-repository-dir+)))
-    ;; most of the cases, simply load Quicklisp
-    (when (uiop:file-exists-p ql-setup-file)
-      (format t "LOAD Quicklisp...........")
-      (load ql-setup-file)
-      (format t "ok~%"))))
+        (uiop:symbol-call :quicklisp-quickstart :install :path +pcl-ql-repository-dir+))
+      ;; Apply Quicklisp patch
+      (patch-quicklisp)))
+  ;; Quicklisp system is saved separately from Quicklisp-installed systems, so
+  ;; we need to register Quicklisp directory to ASDF.
+  (push (pcl-relative-pathname "third-party/quicklisp-repository/quicklisp/")
+        asdf:*central-registry*)
+  ;; Simply load the Quicklisp system
+  (asdf:load-system "quicklisp")
+  (uiop:symbol-call :quicklisp :setup))
 
 (defun print-quicklisp-systems ()
   ;; Display the list of ASDF systems installed from Quicklisp
@@ -223,8 +312,8 @@ depandancy source, src for sources)."
 ;;; +--------------------------------------------------------------------------+
 
 (defun initialize-cffi ()
-  ;; cffi is a plain-common-lisp dependancy. We need to load CFFI before
-  ;; configuring cffi:*foreign-library-directories* for applications.
+  ;; CFFI is a hard-dependancy for pcl, we use it to configure applications.
+  ;; For convenience we install/load it directly from Quicklisp
   (format t "LOAD Foreign Interface...")
   (uiop:symbol-call :quicklisp :quickload :cffi :silent t)
   (format t "ok~%"))
@@ -246,7 +335,6 @@ depandancy source, src for sources)."
     ;; If "initialize" is called from a standalone executable,
     ;; cffi:*foreign-library-directories* need to be overridden with new value.
     (setf (symbol-value cffi-directories) (list pcl-root-dir))
-    (push pcl-root-dir (symbol-value cffi-directories))
     ;; List the libraries and applications
     (dolist (app-dir (append (pcl-subdirectories +pcl-lib-dir+)
                              (pcl-subdirectories +pcl-app-dir+)))
@@ -284,8 +372,7 @@ depandancy source, src for sources)."
 ;;;
 ;;; By default, SBCL try to save and restore open shared libraries from their
 ;;; absolute pathnames. This probably works well on Unix-based systems, but this
-;;; is absolutely not working when you start an executable on Windows using
-;;; external DLLs.
+;;; is not working well on Windows.
 ;;;
 ;;; This part of the code is a small work-around:
 ;;; - At startup, we save the initial list of open DLLs (msvcrt.dll, kernel32.dll, etc)
@@ -308,13 +395,14 @@ depandancy source, src for sources)."
 
 (defun load-library-success (pathname)
   (let ((success t))
-    (handler-bind
-        ((error (lambda (condition)
-                  (declare (ignore condition))
-                  (setf success nil))))
-      ;; try to load libary
-      (sb-alien:load-shared-object pathname)
-      (format t "DLL ~A~%" pathname))
+    (handler-case
+        (progn
+          ;; try to load libary
+          (sb-alien:load-shared-object pathname)
+          (format t "DLL ~A~%" pathname))
+      (error (condition)
+        (declare (ignore condition))
+        (setf success nil)))
     ;; return value
     success))
 
@@ -336,6 +424,9 @@ depandancy source, src for sources)."
     (format t "DLL ~A~%" foreign-library)))
 
 (defun restore-foreign-library-information ()
+  ;; This is important to set pcl-root-dir to the proper value
+  (setf pcl-root-dir (standalone-get-root-dir))
+  ;; try to load the remaining DLLs
   (dolist (namestring pcl-foreign-libraries)
     ;; first case: try to load system liraries (i.e. "gdi32" "opengl32" etc)
     (unless (load-library-success namestring)
