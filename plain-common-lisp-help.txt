@@ -1,0 +1,411 @@
+* Common Lisp Help *
+====================
+
+This page contains code snippets for Common Lisp. The target audience is Common
+Lisp's beginners. These examples are mostly based on the standard libraries
+Common Lisp and UIOP. These 2 package are very likely to be present on any
+modern Common Lisp distribution.
+
+Each example can be found simply by searching in this page: Ctrl+F.
+
+Functions are documented here:
+https://asdf.common-lisp.dev/uiop.pdf
+
+================================================================================
+== Listing                                                                    ==
+================================================================================
+
+;; Concatenate lists                                                      (R) ;;
+;; Print a simple string with a new line                                  (R) ;;
+;; Print the content of a list                                            (R) ;;
+;; Read a text file and get a string                                      (R) ;;
+;; Read a text file and get a list of lines                               (R) ;;
+;; Write a text file                                                      (R) ;;
+;; Retrieve arguments provided from command-line                          (R) ;;
+;; Call a function which does not exists at compilation time              (R) ;;
+;; Split a string based on a separator                                    (R) ;;
+;; Get the length of a string                                             (R) ;;
+;; Find position of a string inside a string                              (R) ;;
+;; Extract a part of a string                                             (R) ;;
+;; Concatenate multiple strings                                           (R) ;;
+;; Check if a string is prefixed by another one                           (R) ;;
+;; Check if a string is suffixed by another one                           (R) ;;
+;; Remove the end of line of a string                                     (R) ;;
+;; Retrieve the value of an environment variable                          (R) ;;
+;; Retrieve the list of directories of an environment variable (i.e. PATH)(R) ;;
+;; Create a pathname from a filename                                      (R) ;;
+;; Retrieve the directory of a pathname                                   (R) ;;
+;; Retrieve the parent directory of a pathname                            (R) ;;
+;; Split a filename into basename and extension                           (R) ;;
+;; Check the existence of a directory                                     (R) ;;
+;; Check the existence of a file                                          (R) ;;
+;; Rename a file                                                          (R) ;;
+;; Copy a file                                                            (R) ;;
+;; List the directories contained in a directory                          (R) ;;
+;; List the files contained in a directory                                (R) ;;
+;; Retrieve Windows User special directories                              (R) ;;
+;; Run an external program and capture the output                         (R) ;;
+;; Dynamically load a DLL file                                            (R) ;;
+;; Generate an executable file (i.e my-program.exe)                       (R) ;;
+;; Request to close the program                                           (R) ;;
+
+================================================================================
+== CONTENT                                                                    ==
+================================================================================
+
+;;----------------------------------------------------------------------------;;
+;; Concatenate lists                                                      (R) ;;
+;;  Package: common-lisp                                                      ;;
+;; Function: concatenate                                                      ;;
+;;----------------------------------------------------------------------------;;
+
+* (concatenate 'list '(1 2 3) '(4 5 6) '(7 8 9))
+(1 2 3 4 5 6 7 8 9)
+
+;;----------------------------------------------------------------------------;;
+;; Print a simple string with a new line                                  (R) ;;
+;;  Package: uiop                                                             ;;
+;; Function: println                                                          ;;
+;;----------------------------------------------------------------------------;;
+
+(uiop:println "Hello World!")
+
+;;----------------------------------------------------------------------------;;
+;; Print the content of a list                                            (R) ;;
+;;  Package: common-lisp                                                      ;;
+;; Function: format                                                           ;;
+;;----------------------------------------------------------------------------;;
+
+(format t "List: ~S~%" '(1 2 3 4 5 6 7 8 9)) ;; ~S means the parameter is a list
+List: (1 2 3 4 5 6 7 8 9)
+
+;;----------------------------------------------------------------------------;;
+;; Read a text file and get a string                                      (R) ;;
+;;  Package: uiop                                                             ;;
+;; Function: read-file-string                                                 ;;
+;;----------------------------------------------------------------------------;;
+
+(uiop:read-file-string "E:\\test-2.txt")
+"Line-1
+Line-2
+Line-3"
+
+;;----------------------------------------------------------------------------;;
+;; Read a text file and get a list of lines                               (R) ;;
+;;  Package: uiop                                                             ;;
+;; Function: read-file-lines                                                  ;;
+;;----------------------------------------------------------------------------;;
+
+(uiop:read-file-lines "E:\\test-2.txt")
+("Line-1" "Line-2" "Line-3")
+
+;;----------------------------------------------------------------------------;;
+;; Write a text file                                                      (R) ;;
+;;  Package: common-lisp                                                      ;;
+;; Function: with-open-file                                                   ;;
+;;----------------------------------------------------------------------------;;
+
+(with-open-file (stream "E:\\test-0.txt" :direction :output)
+  (uiop:println "Hello World!" stream))
+
+;;----------------------------------------------------------------------------;;
+;; Retrieve arguments provided from command-line                          (R) ;;
+;;  Package: uiop                                                             ;;
+;; Function: raw-command-line-arguments                                       ;;
+;;----------------------------------------------------------------------------;;
+
+(uiop:raw-command-line-arguments)
+("C:\\Users\\Pascal\\Desktop\\TEST\\plain-common-lisp-v1.0.4\\third-party\\binaries\\sbcl.exe"
+ "--test")
+
+;;----------------------------------------------------------------------------;;
+;; Call a function which does not exists at compilation time              (R) ;;
+;;  Package: uiop                                                             ;;
+;; Function: symbol-call                                                      ;;
+;;----------------------------------------------------------------------------;;
+
+(defun call-non-existing-function ()
+  (uiop:symbol-call :common-lisp-user :function-test))
+
+(defun function-test () (format t "Hello~%"))
+
+(call-non-existing-function)
+
+;;----------------------------------------------------------------------------;;
+;; Split a string based on a separator                                    (R) ;;
+::  Package: uiop                                                             ;;
+;; Function: split-string                                                     ;;
+;;----------------------------------------------------------------------------;;
+
+> (uiop:split-string "test1/test2/test3/test4" :separator "/")
+
+("test1" "test2" "test3" "test4")
+
+;;----------------------------------------------------------------------------;;
+;; Get the length of a string                                             (R) ;;
+::  Package: common-lisp                                                      ;;
+;; Function: length                                                           ;;
+;;----------------------------------------------------------------------------;;
+
+(length "test")
+4
+
+;;----------------------------------------------------------------------------;;
+;; Find position of a string inside a string                              (R) ;;
+::  Package: common-lisp                                                      ;;
+;; Function: search                                                           ;;
+;;----------------------------------------------------------------------------;;
+
+(search "test" "bla-test-bla")
+4
+
+;;----------------------------------------------------------------------------;;
+;; Extract a part of a string                                             (R) ;;
+::  Package: common-lisp                                                      ;;
+;; Function: subseq                                                           ;;
+;;----------------------------------------------------------------------------;;
+
+(subseq "test" 0 2)
+"te"
+
+;;----------------------------------------------------------------------------;;
+;; Concatenate multiple strings                                           (R) ;;
+;;  Package: common-lisp                                                      ;;
+;; Function: concatenate                                                      ;;
+;;----------------------------------------------------------------------------;;
+
+(concatenate 'string "test1/" "test2/" nil "test3/")
+
+"test1/test2/test3/"
+
+;;----------------------------------------------------------------------------;;
+;; Check if a string is prefixed by another one                           (R) ;;
+;;  Package: uiop                                                             ;;
+;; Function: string-prefix-p                                                  ;;
+;;----------------------------------------------------------------------------;;
+
+(uiop:string-prefix-p "prefix-" "prefix-TEST-STRING")
+T
+
+;;----------------------------------------------------------------------------;;
+;; Check if a string is suffixed by another one                           (R) ;;
+;;  Package: uiop                                                             ;;
+;; Function: string-suffix-p                                                  ;;
+;;----------------------------------------------------------------------------;;
+
+(uiop:string-suffix-p "prefix-TEST-STRING-suffix" "-suffix")
+T
+
+;;----------------------------------------------------------------------------;;
+;; Remove the end of line of a string                                     (R) ;;
+;;  Package: uiop                                                             ;;
+;; Function: stripln                                                          ;;
+;;----------------------------------------------------------------------------;;
+
+(uiop:stripln "String with end of line
+")
+
+"String with end of line" ;; first result:  the line without end of line
+"                         ;; second result: the removed end of line
+"
+
+(multiple-value-bind (stripped-string end-of-line)
+    (uiop:stripln "String with end of line
+")
+  (declare (ignore end-of-line))
+  stripped-string)
+  
+"String with end of line" ;; only 1 result
+  
+;;----------------------------------------------------------------------------;;
+;; Retrieve the value of an environment variable                          (R) ;;
+;;  Package: uiop                                                             ;;
+;; Function: getenv                                                           ;;
+;;----------------------------------------------------------------------------;;
+
+(uiop:getenv "USERNAME")
+"Pascal"
+  
+;;----------------------------------------------------------------------------;;
+;; Retrieve the list of directories of an environment variable (i.e. PATH)(R) ;;
+;;  Package: uiop                                                             ;;
+;; Function: getenv-pathnames                                                 ;;
+;;----------------------------------------------------------------------------;;
+
+(uiop:getenv-pathnames "PATH")
+(#P"C:/Program Files/Common Files/Oracle/Java/javapath"
+ #P"C:/WINDOWS/system32"
+ #P"C:/WINDOWS"
+ #P"C:/WINDOWS/System32/Wbem"
+ #P"C:/WINDOWS/System32/WindowsPowerShell/v1.0/"
+ #P"C:/WINDOWS/System32/OpenSSH/")
+
+;;----------------------------------------------------------------------------;;
+;; Create a pathname from a filename                                      (R) ;;
+;;  Package: uiop                                                             ;;
+;; Function: parse-native-namestring                                          ;;
+;;----------------------------------------------------------------------------;;
+
+(uiop:parse-native-namestring "C:\\test\\test.txt")
+#P"C:/test/test.txt"
+
+;;----------------------------------------------------------------------------;;
+;; Retrieve the directory of a pathname                                   (R) ;;
+;;  Package: uiop                                                             ;;
+;; Function: pathname-directory-pathname                                      ;;
+;;----------------------------------------------------------------------------;;
+
+(uiop:pathname-directory-pathname
+  (uiop:parse-native-namestring "C:\\test\\test.txt"))
+#P"C:/test/"
+
+;;----------------------------------------------------------------------------;;
+;; Retrieve the parent directory of a pathname                            (R) ;;
+;;  Package: uiop                                                             ;;
+;; Function: pathname-parent-directory-pathname                               ;;
+;;----------------------------------------------------------------------------;;
+
+(uiop:pathname-parent-directory-pathname
+  (uiop:parse-native-namestring "C:\\test\\test.txt"))
+#P"C:/"
+
+;;----------------------------------------------------------------------------;;
+;; Split a filename into basename and extension                           (R) ;;
+;;  Package: uiop                                                             ;;
+;; Function: split-name-type                                                  ;;
+;;----------------------------------------------------------------------------;;
+
+(uiop:split-name-type "test.txt")
+"test" ;; return first  value: basename
+"txt"  ;; return second value: extension
+
+(multiple-value-bind (basename extension)
+    (uiop:split-name-type "test.txt")
+  (format t "basename='~A' extension='~A'~%" basename extension))
+basename='test' extension='txt'
+
+;;----------------------------------------------------------------------------;;
+;; Check the existence of a directory                                     (R) ;;
+;;  Package: uiop                                                             ;;
+;; Function: directory-exists-p                                               ;;
+;;----------------------------------------------------------------------------;;
+
+(when (uiop:directory-exists-p "C:\\test\\")
+  (format t "The directory exists"))
+
+;;----------------------------------------------------------------------------;;
+;; Check the existence of a file                                          (R) ;;
+;;  Package: uiop                                                             ;;
+;; Function: file-exists-p                                                    ;;
+;;----------------------------------------------------------------------------;;
+
+(when (uiop:directory-exists-p "C:\\test\\test.txt")
+  (format t "The file exists"))
+
+;;----------------------------------------------------------------------------;;
+;; Rename a file                                                          (R) ;;
+;;  Package: uiop                                                             ;;
+;; Function: rename-file-overwriting-target                                   ;;
+;;----------------------------------------------------------------------------;;
+
+(uiop:rename-file-overwriting-target
+  "E:\\test-1.txt"
+  "E:\\test-2.txt")
+
+;;----------------------------------------------------------------------------;;
+;; Copy a file                                                            (R) ;;
+;;  Package: uiop                                                             ;;
+;; Function: copy-file                                                        ;;
+;;----------------------------------------------------------------------------;;
+
+(uiop:copy-file "E:\\test-2.txt" "E:\\test-3.txt")
+  
+;;----------------------------------------------------------------------------;;
+;; List the directories contained in a directory                          (R) ;;
+;;  Package: uiop                                                             ;;
+;; Function: subdirectories                                                   ;;
+;;----------------------------------------------------------------------------;;
+
+(uiop:subdirectories "C:\\")
+(#P"C:/$Recycle.Bin/"
+ #P"C:/$WinREAgent/"
+ #P"C:/Documents and Settings/"
+ #P"C:/Program Files (x86)/"
+ #P"C:/Program Files/"
+ #P"C:/ProgramData/"
+ #P"C:/Recovery/"
+ #P"C:/System Volume Information/"
+ #P"C:/Users/"
+ #P"C:/Windows/")
+
+;;----------------------------------------------------------------------------;;
+;; List the files contained in a directory                                (R) ;;
+;;  Package: uiop                                                             ;;
+;; Function: directory-files                                                  ;;
+;;----------------------------------------------------------------------------;;
+
+(uiop:directory-files "E:\\")
+(#P"C:/DumpStack.log")
+
+;;----------------------------------------------------------------------------;;
+;; Retrieve Windows User special directories                              (R) ;;
+;;  Package: uiop                                                             ;;
+;; Function: get-folder-path                                                  ;;
+;;----------------------------------------------------------------------------;;
+
+(uiop:get-folder-path :appdata)
+#P"C:/Users/Pascal/AppData/Roaming/"
+
+(uiop:get-folder-path :local-appdata)
+#P"C:/Users/Pascal/AppData/Local/"
+
+(uiop:get-folder-path :common-appdata)
+#P"C:/ProgramData/Application Data/"
+
+;;----------------------------------------------------------------------------;;
+;; Run an external program and capture the output                         (R) ;;
+;;  Package: uiop                                                             ;;
+;; Function: run-program                                                      ;;
+;;----------------------------------------------------------------------------;;
+
+* (uiop:run-program "DIR C:\\" :output :string)
+" Volume in drive C has no label.
+ Volume Serial Number is BE25-0CEB
+
+ Directory of C:\\
+
+11/29/2020  05:24 PM    <DIR>          Dell
+08/11/2022  09:32 PM    <DIR>          Intel
+12/07/2019  05:14 PM    <DIR>          PerfLogs
+08/11/2022  02:39 PM    <DIR>          Program Files
+07/05/2022  01:50 PM    <DIR>          Program Files (x86)
+02/20/2021  08:00 AM    <DIR>          Users
+08/11/2022  09:34 PM    <DIR>          Windows
+               0 File(s)              0 bytes
+               7 Dir(s)  47,440,744,448 bytes free
+"
+
+;;----------------------------------------------------------------------------;;
+;; Dynamically load a DLL file                                            (R) ;;
+;;  Package: cffi                                                             ;;
+;; Function: load-foreign-library                                             ;;
+;;----------------------------------------------------------------------------;;
+
+;; will try to load "sqlite3.dll"
+(cffi:load-foreign-library '(:default "sqlite3"))
+
+;;----------------------------------------------------------------------------;;
+;; Generate an executable file (i.e my-program.exe)                       (R) ;;
+;;  Package: sb-ext                                                           ;;
+;; Function: save-lisp-and-die                                                ;;
+;;----------------------------------------------------------------------------;;
+
+(sb-ext:save-lisp-and-die "my-program.exe" :toplevel #'my-package:main :executable t :compression t)
+
+;;----------------------------------------------------------------------------;;
+;; Request to close the program                                           (R) ;;
+;;  Package: uiop                                                             ;;
+;; Function: quit                                                             ;;
+;;----------------------------------------------------------------------------;;
+
+(uiop:quit)
