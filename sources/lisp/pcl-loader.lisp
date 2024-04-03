@@ -3,10 +3,10 @@
 ;;; | Info     | Value                                                         |
 ;;; +----------+---------------------------------------------------------------+
 ;;; | Filename | pcl-loader.lisp                                               |
-;;; | Project  | plain-starter                                                 |
+;;; | Project  | plain-common-lisp                                             |
 ;;; | License  | Simplified BSD License (details in attached LICENSE file)     |
 ;;; +----------+---------------------------------------------------------------+
-;;; | Copyright (C) 2014-2022 Pascal COMBIER <combier@outlook.com>             |
+;;; | Copyright (C) 2014-2024 Pascal COMBIER <combier@outlook.com>             |
 ;;; +--------------------------------------------------------------------------+
 ;;;
 ;;; Loader for plain-common-lisp applications
